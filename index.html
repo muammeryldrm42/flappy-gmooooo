@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flappy İnek</title>
+  <style>
+    body { margin: 0; background: #70c5ce; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    canvas { background: #70c5ce; display: block; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="320" height="480"></canvas>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // İnek kafası resmi (benekli)
+    const cowHead = new Image();
+    cowHead.src = 'https://i.ibb.co/1dT6HzF/cow-head.png'; // Benekli inek kafası örneği
+
+    // Oyun değişkenleri
+    let y = 150;
+    let velocity = 0;
+
+    // Hız ayarları (yavaşlatıldı)
+    const gravity = 0.3;
+    const jump = -5;
+    const pipeSpeed = 1;
+
+    // Borular için
+    const pipes = [];
+    const pipeWidth = 50;
+    const pipeGap = 120;
+    let frame = 0;
+    let score = 0;
+
+    // Oyun durumu
+    let gameOver = false;
+
+    // Kontrol: boşluk tuşu ile zıplat
+    window.addEventListener('keydown', e => {
+      if (e.code === 'Space') {
+        velocity = jump;
+        if(gameOver) {
+          // Oyun bitti ise yeniden başlat
+          y = 150;
+          velocity = 0;
+          pipes.length = 0;
+          frame = 0;
+          score = 0;
+          gameOver = false;
+          gameLoop();
+        }
+      }
+    });
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Arka plan (gökyüzü)
+      ctx.fillStyle = '#70c5ce';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Boruları çiz
+      pipes.forEach(pipe => {
+        ctx.fillStyle = '#228B22';
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+        ctx.fillRect(pipe.x, pipe.top + pipeGap, pipeWidth, canvas.height - pipe.top - pipeGap);
+      });
+
+      // İnek kafasını çiz
+      ctx.drawImage(cowHead, 50, y, 50, 50);
+
+      // Skoru yazdır
+      ctx.fillStyle = 'white';
+      ctx.font = '20px Arial';
+      ctx.fillText('Skor: ' + score, 10, 25);
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      velocity += gravity;
+      y += velocity;
+
+      // Boru oluştur
+      if (frame % 90 === 0) {
+        const topHeight = Math.random() * (canvas.height - pipeGap - 100) + 20;
+        pipes.push({ x: canvas.width, top: topHeight });
+      }
+
+      // Boruları hareket ettir ve kontrol et
+      pipes.forEach(pipe => {
+        pipe.x -= pipeSpeed;
+
+        // Çarpma kontrolü
+        if (
+          50 + 50 > pipe.x && 50 < pipe.x + pipeWidth &&
+          (y < pipe.top || y + 50 > pipe.top + pipeGap)
+        ) {
+          gameOver = true;
+        }
+
+        // Skor arttır
+        if (pipe.x + pipeWidth === 50) {
+          score++;
+        }
+      });
+
+      // Boruları temizle
+      if (pipes.length > 0 && pipes[0].x + pipeWidth < 0) {
+        pipes.shift();
+      }
+
+      // Yere veya tavana çarparsa oyun biter
+      if (y > canvas.height - 50 || y < 0) {
+        gameOver = true;
+      }
+
+      frame++;
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      if (!gameOver) {
+        requestAnimationFrame(gameLoop);
+      } else {
+        ctx.fillStyle = 'red';
+        ctx.font = '28px Arial';
+        ctx.fillText('Oyun Bitti! Space ile yeniden başla', 10, canvas.height / 2);
+      }
+    }
+
+    // Resim yüklendiğinde oyunu başlat
+    cowHead.onload = () => {
+      gameLoop();
+    };
+  </script>
+</body>
+</html>
